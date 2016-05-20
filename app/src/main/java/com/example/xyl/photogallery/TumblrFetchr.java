@@ -3,9 +3,10 @@ package com.example.xyl.photogallery;
 import android.net.Uri;
 import android.util.Log;
 
-import org.json.JSONArray;
+import com.example.xyl.photogallery.TumblrBean.ResponseBean.PostsBean;
+import com.google.gson.Gson;
+
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -66,9 +67,7 @@ public class TumblrFetchr {
             String jsonString = getUrlString(url);
             Log.i(TAG, "Received JSON: " + jsonString);
 
-            JSONObject jsonBody = new JSONObject(jsonString);
-
-            parseItems(items, jsonBody);
+            parseItems(items, jsonString);
         } catch (IOException e) {
             Log.e(TAG, "Failed to fetch items", e);
         } catch (JSONException e) {
@@ -78,23 +77,24 @@ public class TumblrFetchr {
         return items;
     }
 
-    private void parseItems(List<GalleryItem> items, JSONObject jsonBody) throws JSONException {
-        JSONObject responseJsonObject = jsonBody.getJSONObject("response");
-        JSONArray postsJsonArray = responseJsonObject.getJSONArray("posts");
-        for (int i = 0; i < postsJsonArray.length(); i++) {
-            JSONObject photoJsonObject = postsJsonArray.getJSONObject(i);
+    private void parseItems(List<GalleryItem> items, String jsonString) throws JSONException {
 
+        Gson gson = new Gson();
+        TumblrBean tumblrBean = gson.fromJson(jsonString, TumblrBean.class);
+
+        List<PostsBean> postsBeans = tumblrBean.getResponse().getPosts();
+
+        for (int i = 0; i < postsBeans.size(); i++) {
+            PostsBean postsBean = postsBeans.get(i);
             GalleryItem item = new GalleryItem();
-            item.setId(photoJsonObject.getString("id"));
-            item.setCaption(photoJsonObject.getString("caption"));
-
-            JSONObject originalSizeJsonObject = photoJsonObject.getJSONArray("photos")
-                    .getJSONObject(0)
-                    .getJSONObject("original_size");
-            if (!originalSizeJsonObject.has("url")) {
+            item.setId(String.valueOf(postsBean.getId()));
+            item.setCaption(postsBean.getCaption());
+            String url = postsBean.getPhotos().get(0).getOriginal_size().getUrl();
+            if (url == null) {
                 continue;
             }
-            item.setUrl(originalSizeJsonObject.getString("url"));
+            item.setUrl(url);
+
             items.add(item);
         }
     }
