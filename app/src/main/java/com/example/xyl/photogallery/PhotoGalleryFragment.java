@@ -6,12 +6,13 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by XyL on 2016/5/21.
@@ -22,6 +23,7 @@ public class PhotoGalleryFragment extends Fragment {
     private static final String TAG = "PhotoGalleryFragment";
 
     private RecyclerView mPhotoRecyclerView;
+    private List<GalleryItem> mItems = new ArrayList<>();
 
     public static Fragment newInstance() {
         return new PhotoGalleryFragment();
@@ -46,18 +48,68 @@ public class PhotoGalleryFragment extends Fragment {
         return view;
     }
 
-    private class FetchItemsTask extends AsyncTask<Void, Void, Void> {
+    private void setupAdapter() {
+
+        // isAdded():判断当前的Fragment是否有和Activity连接
+        if (isAdded()) {
+            mPhotoRecyclerView.setAdapter(new PhotoAdapter(mItems));
+        }
+    }
+
+    private class PhotoHolder extends RecyclerView.ViewHolder {
+
+        private TextView mTitleTextView;
+
+        public PhotoHolder(View itemView) {
+            super(itemView);
+            mTitleTextView = (TextView) itemView;
+        }
+
+        public void bindGalleryItem(GalleryItem item) {
+            mTitleTextView.setText(item.getCaption());
+        }
+    }
+
+    private class PhotoAdapter extends RecyclerView.Adapter<PhotoHolder> {
+
+        List<GalleryItem> mGalleryItems;
+
+        public PhotoAdapter(List<GalleryItem> galleryItems) {
+            mGalleryItems = galleryItems;
+        }
 
         @Override
-        protected Void doInBackground(Void... params) {
-            try {
-                String result = new TumblrFetchr().getUrlString("https://www.bignerdranch.com");
+        public PhotoHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+//            LayoutInflater inflater = getActivity().getLayoutInflater();
+//            View view = inflater.inflate(android.R.layout.simple_list_item_1, parent);
+            TextView textView = new TextView(getActivity());
 
-                Log.i(TAG, "Fetched contents of URL: " + result);
-            } catch (IOException e) {
-                Log.e(TAG, "Failed to fetch URL: ", e);
-            }
-            return null;
+            return new PhotoHolder(textView);
+        }
+
+        @Override
+        public void onBindViewHolder(PhotoHolder holder, int position) {
+            GalleryItem galleryItem = mGalleryItems.get(position);
+            holder.bindGalleryItem(galleryItem);
+        }
+
+        @Override
+        public int getItemCount() {
+            return mGalleryItems.size();
+        }
+    }
+
+    private class FetchItemsTask extends AsyncTask<Void, Void, List<GalleryItem>> {
+
+        @Override
+        protected List<GalleryItem> doInBackground(Void... params) {
+            return new TumblrFetchr().fetchItems();
+        }
+
+        @Override
+        protected void onPostExecute(List<GalleryItem> items) {
+            mItems = items;
+            setupAdapter();
         }
     }
 }
