@@ -54,24 +54,28 @@ public class TumblrFetchr {
         return new String(getUrlBytes(urlSpec));
     }
 
-    public List<GalleryItem> fetchItems() {
+    public List<GalleryItem> fetchItems(int picNum) {
 
         List<GalleryItem> items = new ArrayList<>();
 
-        try {
-            String url = Uri
-                    .parse("https://api.tumblr.com/v2/blog/girlimg-student.tumblr.com/posts/photo")
-                    .buildUpon()
-                    .appendQueryParameter("api_key", API_KEY)
-                    .build().toString();
-            String jsonString = getUrlString(url);
-            Log.i(TAG, "Received JSON: " + jsonString);
+        for (int i = 0; i < picNum / 20; i++) {
+            try {
+                String url = Uri
+                        .parse("https://api.tumblr.com/v2/blog/girlimg-student.tumblr.com/posts/photo")
+                        .buildUpon()
+                        .appendQueryParameter("api_key", API_KEY)
+                        // 从第xxx张图开始
+                        .appendQueryParameter("offset", String.valueOf(i * 20))
+                        .build().toString();
+                String jsonString = getUrlString(url);
+                Log.i(TAG, "Received JSON: " + jsonString);
 
-            parseItems(items, jsonString);
-        } catch (IOException e) {
-            Log.e(TAG, "Failed to fetch items", e);
-        } catch (JSONException e) {
-            Log.e(TAG, "Failed to parse JSON", e);
+                parseItems(items, jsonString);
+            } catch (IOException e) {
+                Log.e(TAG, "Failed to fetch items", e);
+            } catch (JSONException e) {
+                Log.e(TAG, "Failed to parse JSON", e);
+            }
         }
 
         return items;
