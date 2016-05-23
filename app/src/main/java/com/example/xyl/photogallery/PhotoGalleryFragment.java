@@ -1,21 +1,28 @@
 package com.example.xyl.photogallery;
 
 import android.app.Fragment;
-import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
+import com.nostra13.universalimageloader.cache.disc.impl.UnlimitedDiskCache;
+import com.nostra13.universalimageloader.cache.disc.naming.HashCodeFileNameGenerator;
+import com.nostra13.universalimageloader.cache.memory.impl.LruMemoryCache;
+import com.nostra13.universalimageloader.core.DisplayImageOptions;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.nostra13.universalimageloader.core.assist.QueueProcessingType;
+import com.nostra13.universalimageloader.core.display.FadeInBitmapDisplayer;
+import com.nostra13.universalimageloader.core.download.BaseImageDownloader;
+import com.nostra13.universalimageloader.utils.StorageUtils;
+
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,12 +34,9 @@ public class PhotoGalleryFragment extends Fragment {
 
     private static final String TAG = "PhotoGalleryFragment";
 
-    // 显示的图片数
-    public static final int PIC_NUM = 100;
-
     private RecyclerView mPhotoRecyclerView;
     private List<GalleryItem> mItems = new ArrayList<>();
-    private ThumbnailDownloader<PhotoHolder> mThumbnailDownloader;
+    private ImageLoader mImageLoader;
 
     public static Fragment newInstance() {
         return new PhotoGalleryFragment();
@@ -44,19 +48,29 @@ public class PhotoGalleryFragment extends Fragment {
         setRetainInstance(true);
         new FetchItemsTask().execute();
 
-        Handler responseHandler = new Handler();
+        // 使用默认的ImageLoader配置
+        File cacheDir = StorageUtils.getCacheDirectory(getActivity());
+        ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(getActivity())
+                .memoryCacheExtraOptions(480, 800) // default = device screen dimensions
+                .diskCacheExtraOptions(480, 800, null)
+                .threadPoolSize(3) // default
+                .threadPriority(Thread.NORM_PRIORITY - 2) // default
+                .tasksProcessingOrder(QueueProcessingType.FIFO) // default
+                .denyCacheImageMultipleSizesInMemory()
+                .memoryCache(new LruMemoryCache(2 * 1024 * 1024))
+                .memoryCacheSize(2 * 1024 * 1024)
+                .memoryCacheSizePercentage(13) // default
+                .diskCache(new UnlimitedDiskCache(cacheDir)) // default
+                .diskCacheSize(50 * 1024 * 1024)
+                .diskCacheFileCount(100)
+                .diskCacheFileNameGenerator(new HashCodeFileNameGenerator()) // default
+                .imageDownloader(new BaseImageDownloader(getActivity())) // default
+                .defaultDisplayImageOptions(DisplayImageOptions.createSimple()) // default
+                .writeDebugLogs()
+                .build();
+        mImageLoader = ImageLoader.getInstance();
+        mImageLoader.init(config);
 
-        mThumbnailDownloader = new ThumbnailDownloader<>(responseHandler);
-        mThumbnailDownloader.setThumbnailDownloadListener(new ThumbnailDownloader.ThumbnailDownloadListener<PhotoHolder>() {
-            @Override
-            public void onThumbnailDownloaded(PhotoHolder target, Bitmap thumbnail) {
-                Drawable drawable = new BitmapDrawable(getResources(), thumbnail);
-                target.bindGalleryItem(drawable);
-            }
-        });
-        mThumbnailDownloader.start();
-        mThumbnailDownloader.getLooper();
-        Log.i(TAG, "Background thread started");
     }
 
     @Nullable
@@ -74,14 +88,11 @@ public class PhotoGalleryFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        mThumbnailDownloader.cleanQueue();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mThumbnailDownloader.quit();
-        Log.i(TAG, "Background thread destroyed");
     }
 
     private void setupAdapter() {
@@ -101,8 +112,19 @@ public class PhotoGalleryFragment extends Fragment {
             mItemImageView = (ImageView) itemView.findViewById(R.id.fragment_gallery_item_image_view);
         }
 
-        public void bindGalleryItem(Drawable drawable) {
-            mItemImageView.setImageDrawable(drawable);
+        public void bindGalleryItem(GalleryItem item) {
+            DisplayImageOptions options = new DisplayImageOptions.Builder()
+                    .showImageOnLoading(R.drawable.loading) // resource or drawable
+                    .showImageForEmptyUri(R.drawable.loading) // resource or drawable
+                    .showImageOnFail(R.drawable.loading) // resource or drawable
+                    .resetViewBeforeLoading(false)  // default
+                    .delayBeforeLoading(100)
+                    .cacheInMemory(true)
+                    .cacheOnDisk(true)
+                    .considerExifParams(false) // default
+                    .displayer(new FadeInBitmapDisplayer(400))
+                    .build();
+            mImageLoader.displayImage(item.getUrl(), mItemImageView, options);
         }
     }
 
@@ -125,9 +147,7 @@ public class PhotoGalleryFragment extends Fragment {
         @Override
         public void onBindViewHolder(PhotoHolder holder, int position) {
             GalleryItem galleryItem = mGalleryItems.get(position);
-            Drawable placeholder = getResources().getDrawable(R.drawable.bill_up_close);
-            holder.bindGalleryItem(placeholder);
-            mThumbnailDownloader.queueThumbnail(holder, galleryItem.getUrl());
+            holder.bindGalleryItem(galleryItem);
         }
 
         @Override
@@ -140,7 +160,7 @@ public class PhotoGalleryFragment extends Fragment {
 
         @Override
         protected List<GalleryItem> doInBackground(Void... params) {
-            return new TumblrFetchr().fetchItems(PIC_NUM);
+            return new PixivFetchr().fetchItems();
         }
 
         @Override
