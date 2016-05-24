@@ -6,7 +6,7 @@ import java.util.List;
  * Created by XyL on 2016/5/21.
  * Bean
  */
-public class TumblrBean {
+public class TumblrPostBean {
 
     private MetaBean meta;
 

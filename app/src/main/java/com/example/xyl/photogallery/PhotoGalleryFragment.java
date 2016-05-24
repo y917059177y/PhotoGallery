@@ -93,6 +93,7 @@ public class PhotoGalleryFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        mImageLoader.clearDiskCache();
     }
 
     private void setupAdapter() {
@@ -160,7 +161,13 @@ public class PhotoGalleryFragment extends Fragment {
 
         @Override
         protected List<GalleryItem> doInBackground(Void... params) {
-            return new PixivFetchr().fetchItems();
+            String query = "cat";
+
+            if (query == null) {
+                return new TumblrFetchr().fetchRecentPhotos(100);
+            } else {
+                return new TumblrFetchr().searchPhotos(query);
+            }
         }
 
         @Override
