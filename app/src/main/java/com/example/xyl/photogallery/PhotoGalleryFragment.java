@@ -58,7 +58,8 @@ public class PhotoGalleryFragment extends Fragment {
 //        // 开始一个Service
 //        Intent i = PollService.newIntent(getActivity());
 //        getActivity().startService(i);
-        PollService.setServiceAlarm(getActivity(), true);
+
+//        PollService.setServiceAlarm(getActivity(), true);
 
         // 使用默认的ImageLoader配置
         File cacheDir = StorageUtils.getCacheDirectory(getActivity());
@@ -144,6 +145,13 @@ public class PhotoGalleryFragment extends Fragment {
                 searchView.setQuery(query, false);
             }
         });
+
+        MenuItem toggleItem = menu.findItem(R.id.menu_item_toggle_polling);
+        if (PollService.isServiceAlarmOn(getActivity())) {
+            toggleItem.setTitle(R.string.stop_polling);
+        } else {
+            toggleItem.setTitle(R.string.start_polling);
+        }
     }
 
     @Override
@@ -153,6 +161,13 @@ public class PhotoGalleryFragment extends Fragment {
                 QueryPreferences.setStoredQuery(getActivity(), null);
                 updateItems();
                 mProgressDialog.show();
+                return true;
+            case R.id.menu_item_toggle_polling:
+                boolean shouldStartAlarm = !PollService.isServiceAlarmOn(getActivity());
+                PollService.setServiceAlarm(getActivity(), shouldStartAlarm);
+
+                // 让Activity更新ToolBar的设置菜单
+                getActivity().invalidateOptionsMenu();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
