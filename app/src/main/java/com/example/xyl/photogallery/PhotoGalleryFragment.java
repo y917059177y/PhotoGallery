@@ -20,14 +20,11 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.ImageView;
 
 import com.nostra13.universalimageloader.cache.disc.impl.UnlimitedDiskCache;
-import com.nostra13.universalimageloader.cache.disc.naming.HashCodeFileNameGenerator;
 import com.nostra13.universalimageloader.cache.memory.impl.LruMemoryCache;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
-import com.nostra13.universalimageloader.core.assist.QueueProcessingType;
 import com.nostra13.universalimageloader.core.display.FadeInBitmapDisplayer;
-import com.nostra13.universalimageloader.core.download.BaseImageDownloader;
 import com.nostra13.universalimageloader.utils.StorageUtils;
 
 import java.io.File;
@@ -58,14 +55,16 @@ public class PhotoGalleryFragment extends Fragment {
         setHasOptionsMenu(true);
         updateItems();
 
+//        // 开始一个Service
+//        Intent i = PollService.newIntent(getActivity());
+//        getActivity().startService(i);
+        PollService.setServiceAlarm(getActivity(), true);
+
         // 使用默认的ImageLoader配置
         File cacheDir = StorageUtils.getCacheDirectory(getActivity());
         ImageLoaderConfiguration config = new ImageLoaderConfiguration.Builder(getActivity())
                 .memoryCacheExtraOptions(480, 800) // default = device screen dimensions
                 .diskCacheExtraOptions(480, 800, null)
-                .threadPoolSize(3) // default
-                .threadPriority(Thread.NORM_PRIORITY - 2) // default
-                .tasksProcessingOrder(QueueProcessingType.FIFO) // default
                 .denyCacheImageMultipleSizesInMemory()
                 .memoryCache(new LruMemoryCache(2 * 1024 * 1024))
                 .memoryCacheSize(2 * 1024 * 1024)
@@ -73,9 +72,6 @@ public class PhotoGalleryFragment extends Fragment {
                 .diskCache(new UnlimitedDiskCache(cacheDir)) // default
                 .diskCacheSize(50 * 1024 * 1024)
                 .diskCacheFileCount(100)
-                .diskCacheFileNameGenerator(new HashCodeFileNameGenerator()) // default
-                .imageDownloader(new BaseImageDownloader(getActivity())) // default
-                .defaultDisplayImageOptions(DisplayImageOptions.createSimple()) // default
                 .writeDebugLogs()
                 .build();
         mImageLoader = ImageLoader.getInstance();
@@ -107,6 +103,7 @@ public class PhotoGalleryFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        mImageLoader.clearMemoryCache();
         mImageLoader.clearDiskCache();
     }
 
@@ -139,14 +136,14 @@ public class PhotoGalleryFragment extends Fragment {
                 return false;
             }
         });
-//
-//        searchView.setOnSearchClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                String query = QueryPreferences.getStoredQuery(getActivity());
-//                searchView.setQuery(query, false);
-//            }
-//        });
+
+        searchView.setOnSearchClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String query = QueryPreferences.getStoredQuery(getActivity());
+                searchView.setQuery(query, false);
+            }
+        });
     }
 
     @Override
@@ -155,6 +152,7 @@ public class PhotoGalleryFragment extends Fragment {
             case R.id.menu_item_clear:
                 QueryPreferences.setStoredQuery(getActivity(), null);
                 updateItems();
+                mProgressDialog.show();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -189,11 +187,11 @@ public class PhotoGalleryFragment extends Fragment {
                     .showImageForEmptyUri(R.drawable.loading) // resource or drawable
                     .showImageOnFail(R.drawable.loading) // resource or drawable
                     .resetViewBeforeLoading(false)  // default
-                    .delayBeforeLoading(100)
-                    .cacheInMemory(true)
-                    .cacheOnDisk(true)
+                    .delayBeforeLoading(0)
+//                    .cacheInMemory(true)
+//                    .cacheOnDisk(true)
                     .considerExifParams(false) // default
-                    .displayer(new FadeInBitmapDisplayer(400))
+                    .displayer(new FadeInBitmapDisplayer(500))
                     .build();
             mImageLoader.displayImage(item.getUrl(), mItemImageView, options);
         }
