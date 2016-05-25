@@ -1,6 +1,7 @@
 package com.example.xyl.photogallery;
 
 import android.app.Fragment;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -44,6 +45,7 @@ public class PhotoGalleryFragment extends Fragment {
     private RecyclerView mPhotoRecyclerView;
     private List<GalleryItem> mItems = new ArrayList<>();
     private ImageLoader mImageLoader;
+    private ProgressDialog mProgressDialog;
 
     public static Fragment newInstance() {
         return new PhotoGalleryFragment();
@@ -90,6 +92,10 @@ public class PhotoGalleryFragment extends Fragment {
                 .findViewById(R.id.fragment_photo_gallery_recycler_view);
         mPhotoRecyclerView.setLayoutManager(new GridLayoutManager(getActivity(), 3));
 
+        mProgressDialog = new ProgressDialog(getActivity());
+        mProgressDialog.setMessage("正在搜索");
+        mProgressDialog.setTitle("提示");
+
         return view;
     }
 
@@ -123,6 +129,7 @@ public class PhotoGalleryFragment extends Fragment {
                         .getSystemService(Context.INPUT_METHOD_SERVICE);
                 inputMethodManager.hideSoftInputFromWindow(searchView.getWindowToken(), 0);
                 searchView.onActionViewCollapsed();
+                mProgressDialog.show();
                 return true;
             }
 
@@ -132,14 +139,14 @@ public class PhotoGalleryFragment extends Fragment {
                 return false;
             }
         });
-
-        searchView.setOnSearchClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String query = QueryPreferences.getStoredQuery(getActivity());
-                searchView.setQuery(query, false);
-            }
-        });
+//
+//        searchView.setOnSearchClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                String query = QueryPreferences.getStoredQuery(getActivity());
+//                searchView.setQuery(query, false);
+//            }
+//        });
     }
 
     @Override
@@ -242,6 +249,9 @@ public class PhotoGalleryFragment extends Fragment {
         protected void onPostExecute(List<GalleryItem> items) {
             mItems = items;
             setupAdapter();
+            if (mProgressDialog.isShowing()) {
+                mProgressDialog.cancel();
+            }
         }
     }
 }
