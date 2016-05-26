@@ -92,6 +92,7 @@ public class PhotoGalleryFragment extends Fragment {
         mProgressDialog = new ProgressDialog(getActivity());
         mProgressDialog.setMessage("正在搜索");
         mProgressDialog.setTitle("提示");
+        mProgressDialog.setCancelable(false);
 
         return view;
     }
@@ -203,8 +204,8 @@ public class PhotoGalleryFragment extends Fragment {
                     .showImageOnFail(R.drawable.loading) // resource or drawable
                     .resetViewBeforeLoading(false)  // default
                     .delayBeforeLoading(0)
-//                    .cacheInMemory(true)
-//                    .cacheOnDisk(true)
+                    .cacheInMemory(true)
+                    .cacheOnDisk(true)
                     .considerExifParams(false) // default
                     .displayer(new FadeInBitmapDisplayer(500))
                     .build();
