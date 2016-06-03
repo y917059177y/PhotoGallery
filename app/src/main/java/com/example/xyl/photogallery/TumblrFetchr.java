@@ -86,6 +86,7 @@ public class TumblrFetchr {
                         .parse("https://api.tumblr.com/v2/blog/girlimg-student.tumblr.com/posts/photo")
                         .buildUpon()
                         .appendQueryParameter("api_key", API_KEY)
+                        .appendQueryParameter("offset", String.valueOf(i * 20))
                         .build().toString();
                 strings.add(url);
             }

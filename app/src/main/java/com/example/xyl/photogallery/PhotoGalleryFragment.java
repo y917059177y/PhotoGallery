@@ -42,7 +42,6 @@ public class PhotoGalleryFragment extends Fragment {
     private RecyclerView mPhotoRecyclerView;
     private List<GalleryItem> mItems = new ArrayList<>();
     private ImageLoader mImageLoader;
-    private ProgressDialog mProgressDialog;
 
     public static Fragment newInstance() {
         return new PhotoGalleryFragment();
@@ -89,11 +88,6 @@ public class PhotoGalleryFragment extends Fragment {
                 .findViewById(R.id.fragment_photo_gallery_recycler_view);
         mPhotoRecyclerView.setLayoutManager(new GridLayoutManager(getActivity(), 3));
 
-        mProgressDialog = new ProgressDialog(getActivity());
-        mProgressDialog.setMessage("正在搜索");
-        mProgressDialog.setTitle("提示");
-        mProgressDialog.setCancelable(false);
-
         return view;
     }
 
@@ -128,7 +122,6 @@ public class PhotoGalleryFragment extends Fragment {
                         .getSystemService(Context.INPUT_METHOD_SERVICE);
                 inputMethodManager.hideSoftInputFromWindow(searchView.getWindowToken(), 0);
                 searchView.onActionViewCollapsed();
-                mProgressDialog.show();
                 return true;
             }
 
@@ -161,7 +154,6 @@ public class PhotoGalleryFragment extends Fragment {
             case R.id.menu_item_clear:
                 QueryPreferences.setStoredQuery(getActivity(), null);
                 updateItems();
-                mProgressDialog.show();
                 return true;
             case R.id.menu_item_toggle_polling:
                 boolean shouldStartAlarm = !PollService.isServiceAlarmOn(getActivity());
@@ -245,8 +237,19 @@ public class PhotoGalleryFragment extends Fragment {
 
         private String mQuery;
 
+        private ProgressDialog mProgressDialog;
+
         public FetchItemsTask(String query) {
             mQuery = query;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            mProgressDialog = new ProgressDialog(getActivity());
+            mProgressDialog.setMessage("正在搜索");
+            mProgressDialog.setTitle("提示");
+            mProgressDialog.setCancelable(false);
+            mProgressDialog.show();
         }
 
         @Override
@@ -261,11 +264,9 @@ public class PhotoGalleryFragment extends Fragment {
 
         @Override
         protected void onPostExecute(List<GalleryItem> items) {
+            mProgressDialog.dismiss();
             mItems = items;
             setupAdapter();
-            if (mProgressDialog.isShowing()) {
-                mProgressDialog.cancel();
-            }
         }
     }
 }
