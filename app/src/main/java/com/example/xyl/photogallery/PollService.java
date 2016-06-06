@@ -17,7 +17,7 @@ import java.util.List;
 
 /**
  * Created by XyL on 2016/5/25.
- * Service
+ * Service检查是否有更新，有更新的话就显示通知栏通知
  */
 public class PollService extends IntentService {
 

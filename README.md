@@ -1,2 +1,2 @@
 # PhotoGallery
-### 获取Tumblr图片,显示到RecyclerView上
+### 获取Yande.re的图片,显示到RecyclerView上
