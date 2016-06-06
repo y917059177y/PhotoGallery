@@ -29,7 +29,9 @@ import com.nostra13.universalimageloader.utils.StorageUtils;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by XyL on 2016/5/21.
@@ -190,7 +192,12 @@ public class PhotoGalleryFragment extends Fragment {
         }
 
         public void bindGalleryItem(GalleryItem item) {
+            Map<String, String> header = new HashMap<>();
+            header.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.79 Safari/537.36");
+            header.put("Host", "files.yande.re");
+
             DisplayImageOptions options = new DisplayImageOptions.Builder()
+                    .extraForDownloader(header) //设置请求头
                     .showImageOnLoading(R.drawable.loading) // resource or drawable
                     .showImageForEmptyUri(R.drawable.loading) // resource or drawable
                     .showImageOnFail(R.drawable.loading) // resource or drawable
@@ -256,9 +263,9 @@ public class PhotoGalleryFragment extends Fragment {
         protected List<GalleryItem> doInBackground(Void... params) {
 
             if (mQuery == null) {
-                return new TumblrFetchr().fetchRecentPhotos(100);
+                return new YandeFetchr().fetchRecentPhotos(51);
             } else {
-                return new TumblrFetchr().searchPhotos(mQuery);
+                return new YandeFetchr().searchPhotos(mQuery);
             }
         }
 

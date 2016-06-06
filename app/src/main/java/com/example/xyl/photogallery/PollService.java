@@ -41,6 +41,8 @@ public class PollService extends IntentService {
             alarmManager.cancel(pi);
             pi.cancel();
         }
+
+        QueryPreferences.setAlarmOn(context, isOn);
     }
 
     public static boolean isServiceAlarmOn(Context context) {
@@ -66,9 +68,9 @@ public class PollService extends IntentService {
         List<GalleryItem> items;
 
         if (query == null) {
-            items = new TumblrFetchr().fetchRecentPhotos(100);
+            items = new YandeFetchr().fetchRecentPhotos(51);
         } else {
-            items = new TumblrFetchr().searchPhotos(query);
+            items = new YandeFetchr().searchPhotos(query);
         }
 
         if (items.size() == 0) {
