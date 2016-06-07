@@ -1,9 +1,9 @@
 package com.example.xyl.photogallery;
 
+import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.IntentService;
 import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
@@ -24,6 +24,13 @@ public class PollService extends IntentService {
     private static final String TAG = "PollService";
 
     private static final int POLL_INTERVAL = 60 * 1000;
+
+    public static final String ACTION_SHOW_NOTIFICATION =
+            "com.example.xyl.photogallery.SHOW_NOTIFICATION";
+
+    public static final String PERM_PRIVATE = "com.example.xyl.photogallery.PRIVATE";
+    public static final String REQUEST_CODE = "REQUEST_CODE";
+    public static final String NOTIFICATION = "NOTIFICATION";
 
     public static Intent newIntent(Context context) {
         return new Intent(context, PollService.class);
@@ -68,7 +75,7 @@ public class PollService extends IntentService {
         List<GalleryItem> items;
 
         if (query == null) {
-            items = new YandeFetchr().fetchRecentPhotos(51);
+            items = new YandeFetchr().fetchRecentPhotos(1);
         } else {
             items = new YandeFetchr().searchPhotos(query);
         }
@@ -80,6 +87,22 @@ public class PollService extends IntentService {
         String resultId = items.get(0).getId();
         if (resultId.equals(lastResultId)) {
             Log.i(TAG, "Got an old result: " + resultId);
+
+            Resources resources = getResources();
+            Intent i = PhotoGalleryActivity.newIntent(this);
+            PendingIntent pi = PendingIntent.getActivity(this, 0, i, PendingIntent.FLAG_UPDATE_CURRENT);
+
+            Notification notification = new NotificationCompat.Builder(this)
+                    .setTicker(resources.getString(R.string.new_pictures_title))
+                    .setSmallIcon(android.R.drawable.ic_menu_report_image)
+                    .setContentTitle(resources.getString(R.string.new_pictures_title))
+                    .setContentText(resources.getString(R.string.new_pictures_text))
+                    .setContentIntent(pi)
+                    .setAutoCancel(true)
+                    .build();
+
+            showBackgroundNotification(0, notification);
+
         } else {
             Log.i(TAG, "Got a new result: " + resultId);
 
@@ -96,13 +119,19 @@ public class PollService extends IntentService {
                     .setAutoCancel(true)
                     .build();
 
-            NotificationManager notificationManager =
-                    (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            notificationManager.notify(0, notification);
+            showBackgroundNotification(0, notification);
 
         }
 
         QueryPreferences.setLastResultId(this, resultId);
+    }
+
+    private void showBackgroundNotification(int requestCode, Notification notification) {
+        Intent i = new Intent(ACTION_SHOW_NOTIFICATION);
+        i.putExtra(REQUEST_CODE, 0);
+        i.putExtra(NOTIFICATION, notification);
+
+        sendOrderedBroadcast(i, PERM_PRIVATE, null, null, Activity.RESULT_OK, null, null);
     }
 
     private boolean isNetworkAvailableAndConnected() {

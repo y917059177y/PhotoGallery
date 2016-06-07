@@ -37,7 +37,7 @@ import java.util.Map;
  * Created by XyL on 2016/5/21.
  * PhotoGalleryFragment
  */
-public class PhotoGalleryFragment extends Fragment {
+public class PhotoGalleryFragment extends VisibleFragment {
 
     private static final String TAG = "PhotoGalleryFragment";
 
